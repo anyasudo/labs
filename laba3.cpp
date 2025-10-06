@@ -6,7 +6,7 @@ int main()
 	//Первая часть
 	setlocale(LC_ALL, "Russian");
 	int n;
-	std::cout << "Введите количество чисел последовательности" << std::endl;
+	std::cout << "Введите количество членов последовательности" << std::endl;
 	std::cin >> n;
 
 	if (n >= 0) {
