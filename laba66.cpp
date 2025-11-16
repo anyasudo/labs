@@ -31,8 +31,13 @@ int* findZeroRows(int** mat, int r, int c, int* count) {
     return zero_rows;
 }
 
+
+
+
 int main() {
     setlocale(LC_ALL, "Russian");
+
+    // ПЕРВЫЙ пункт
     int rows = 2, cols = 2;
     int** matrix = (int**)std::malloc(rows * sizeof(int*)); // для строк
 
@@ -164,6 +169,38 @@ int main() {
     std::free(new_matrix);
 
     std::free(zero_rows);
+
+
+
+    // ВТОРОЙ пункт
+
+    int a, b;
+    std::cout << "Введите значение переменной a: ";
+    std::cin >> a;
+    std::cout << "Введите значение переменной b: ";
+    std::cin >> b;
+    std::cout << "Исходные значения: a = " << a << ", b = " << b << std::endl;
+
+    int* pa = new int;
+    int* pb = new int;
+    *pa = a;
+    *pb = b;
+    std::cout << "После создания указателей: *pa = " << *pa << ", *pb = " << *pb << std::endl;
+
+    *pa = *pa * 2;
+    std::cout << "После увеличения a в 2 раза через pa: *pa = " << *pa << std::endl;
+    
+    int temp = *pa;
+    *pa = *pb;
+    *pb = temp;
+    std::cout << "После обмена значениями через указатели: *pa = " << *pa << ", *pb = " << *pb << std::endl;
+
+    a = *pa;
+    b = *pb;
+    std::cout << "Финальные значения переменных: a = " << a << ", b = " << b << std::endl;
+
+    delete pa;
+    delete pb;
 
     return 0;
 }
