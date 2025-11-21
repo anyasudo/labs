@@ -1,28 +1,73 @@
 ﻿#include <iostream>
 #include <cstdlib>
 
-// функция для поиска строк с нулями
-// используем указатели тк нужно вернуть два значения: сколько и какие строки содержат нули
-int* findZeroRows(int** mat, int r, int c, int* count) {
-    *count = 0;
-    for (int i = 0; i < r; i++) {
-        for (int j = 0; j < c; j++) {
-            if (mat[i][j] == 0) {
-                (*count)++;
-                break;
-            }
+const int ROWS = 2;
+const int COLS = 2;
+
+void print_matrix(int** matrix, int rows, int cols) {
+    std::cout << "\nМатрица " << rows << "x" << cols << ":\n";
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            std::cout << matrix[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+void create_extended_matrix(int**& matrix, int& rows, int& cols) {
+    int a = matrix[0][0];
+    int b = matrix[0][1];
+    int c = matrix[1][0];
+    int d = matrix[1][1];
+
+    int new_rows = ROWS + a;
+    int new_cols = COLS + b;
+
+    matrix = (int**)std::realloc(matrix, new_rows * sizeof(int*));
+
+    for (int i = 0; i < new_rows; ++i) {
+        if (i < ROWS) {
+            matrix[i] = (int*)std::realloc(matrix[i], new_cols * sizeof(int));
+        }
+        else {
+            matrix[i] = (int*)std::malloc(new_cols * sizeof(int));
         }
     }
 
-    // создаем массив для индексов строк с нулями
-    int* zero_rows = (int*)std::malloc((*count) * sizeof(int));
+    for (int i = 0; i < new_rows; ++i) {
+        for (int j = 0; j < new_cols; ++j) {
+            matrix[i][j] = i * c + j * d;
+        }
+    }
 
-    // заполняем массив индексами
+    rows = new_rows;
+    cols = new_cols;
+}
+
+int* find_zero_rows(int** matrix, int rows, int cols, int& count) {
+    count = 0;
+
+    for (int i = 0; i < rows; i++) {
+        bool has_zero = false;
+        for (int j = 0; j < cols; j++) {
+            if (matrix[i][j] == 0) {
+                has_zero = true;
+                break;
+            }
+        }
+        if (has_zero) {
+            count++;
+        }
+    }
+
+    int* zero_rows = (int*)std::malloc(count * sizeof(int));
+
     int index = 0;
-    for (int i = 0; i < r; i++) {
-        for (int j = 0; j < c; j++) {
-            if (mat[i][j] == 0) {
-                zero_rows[index++] = i;
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            if (matrix[i][j] == 0) {
+                zero_rows[index] = i;
+                index++;
                 break;
             }
         }
@@ -31,83 +76,80 @@ int* findZeroRows(int** mat, int r, int c, int* count) {
     return zero_rows;
 }
 
+void remove_rows(int**& matrix, int& rows, int cols, int* rows_to_remove, int remove_count) {
+    if (remove_count == 0 || rows_to_remove == nullptr) {
+        return;
+    }
 
+    int new_rows = rows - remove_count;
 
+    if (new_rows <= 0) {
+        for (int i = 0; i < rows; i++) {
+            std::free(matrix[i]);
+        }
+        std::free(matrix);
+        matrix = nullptr;
+        rows = 0;
+        return;
+    }
+
+    int** temp_matrix = (int**)std::malloc(new_rows * sizeof(int*));
+    int new_index = 0;
+
+    for (int i = 0; i < rows; i++) {
+        bool should_remove = false;
+        for (int j = 0; j < remove_count; j++) {
+            if (i == rows_to_remove[j]) {
+                should_remove = true;
+                break;
+            }
+        }
+
+        if (!should_remove) {
+            temp_matrix[new_index] = matrix[i];
+            new_index++;
+        }
+        else {
+            std::free(matrix[i]);
+        }
+    }
+
+    matrix = (int**)std::realloc(matrix, new_rows * sizeof(int*));
+    for (int i = 0; i < new_rows; i++) {
+        matrix[i] = temp_matrix[i];
+    }
+
+    std::free(temp_matrix);
+    rows = new_rows;
+}
 
 int main() {
-    setlocale(LC_ALL, "Russian");
+    std::setlocale(LC_ALL, "Ru");
 
-    // ПЕРВЫЙ пункт
-    int rows = 2, cols = 2;
-    int** matrix = (int**)std::malloc(rows * sizeof(int*)); // для строк
-
-    for (int i = 0; i < rows; i++) {
-        matrix[i] = (int*)std::malloc(cols * sizeof(int)); // для столбцов
+    int** matrix = (int**)std::malloc(ROWS * sizeof(int*));
+    for (int i = 0; i < ROWS; ++i) {
+        matrix[i] = (int*)std::malloc(COLS * sizeof(int));
     }
 
-    std::cout << "Введите 4 числа для матрицы 2x2:" << std::endl;
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            int num;
-            std::cin >> num;
-
-            while (num < 0) {
-                std::cout << "Ошибка. Введите неотрицательное число: ";
-                std::cin >> num;
+    std::cout << "Введите элементы матрицы " << ROWS << "x" << COLS << ":" << std::endl;
+    for (int i = 0; i < ROWS; ++i) {
+        for (int j = 0; j < COLS; ++j) {
+            std::cout << "Элемент [" << i << "][" << j << "]: ";
+            std::cin >> matrix[i][j];
+            if (matrix[i][j] < 0) {
+                std::cout << "Ошибка! Число не может быть отрицательным. Повторите ввод." << std::endl;
+                j -= 1;
             }
-
-            matrix[i][j] = num;
         }
     }
 
-    int A = matrix[0][0];  // первое число массива
-    int B = matrix[0][1];  // второе число массива  
-    int C = matrix[1][0];  // третье число массива
-    int D = matrix[1][1];  // четвертое число массива
-
-    std::cout << "\nВзяли значения из массива:" << std::endl;
-    std::cout << "A = matrix[0][0] = " << A << " (строки сверху)" << std::endl;
-    std::cout << "B = matrix[0][1] = " << B << " (столбцы слева)" << std::endl;
-    std::cout << "C = matrix[1][0] = " << C << " (коэффициент C)" << std::endl;
-    std::cout << "D = matrix[1][1] = " << D << " (коэффициент D)" << std::endl;
-
-    int new_rows = rows + A;
-    int new_cols = cols + B;
-
-    // новая матрица большего размера
-    int** new_matrix = (int**)std::malloc(new_rows * sizeof(int*));
-    for (int i = 0; i < new_rows; i++) {
-        new_matrix[i] = (int*)std::malloc(new_cols * sizeof(int));
-    }
-
-    std::cout << "\nЗаполняем новую матрицу по формуле:" << std::endl;
-    for (int i = 0; i < new_rows; i++) {
-        for (int j = 0; j < new_cols; j++) {
-            new_matrix[i][j] = i * C + j * D;
-            std::cout << i << "*" << C << " + " << j << "*" << D << " = " << new_matrix[i][j] << "\t";
-        }
-        std::cout << std::endl;
-    }
-
-    // старую матрицу в правый нижний угол новой
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            new_matrix[i + A][j + B] = matrix[i][j];
-        }
-    }
-
-    std::cout << "\nПосле копирования исходной матрицы:" << std::endl;
-    for (int i = 0; i < new_rows; i++) {
-        for (int j = 0; j < new_cols; j++) {
-            std::cout << new_matrix[i][j] << "\t";
-        }
-        std::cout << std::endl;
-    }
+    int rows = ROWS, cols = COLS;
+    create_extended_matrix(matrix, rows, cols);
 
     int zero_count;
-    int* zero_rows = findZeroRows(new_matrix, new_rows, new_cols, &zero_count);
+    int* zero_rows = find_zero_rows(matrix, rows, cols, zero_count);
 
-    std::cout << "\nНайдено строк с нулями: " << zero_count << std::endl;
+    std::cout << "\nНайдено строк с нулевыми элементами: " << zero_count << std::endl;
     if (zero_count > 0) {
         std::cout << "Индексы строк с нулями: ";
         for (int i = 0; i < zero_count; i++) {
@@ -116,60 +158,25 @@ int main() {
         std::cout << std::endl;
     }
 
-    // удаляем строки с нулями
-    if (zero_count > 0) {
-        int final_rows = new_rows - zero_count;
-        int** final_matrix = (int**)std::malloc(final_rows * sizeof(int*));
+    remove_rows(matrix, rows, cols, zero_rows, zero_count);
 
-        int new_i = 0;
-        for (int i = 0; i < new_rows; i++) {
-            bool should_skip = false;
-
-            for (int z = 0; z < zero_count; z++) {
-                if (i == zero_rows[z]) {
-                    should_skip = true;
-                    break;
-                }
-            }
-
-            if (!should_skip) {
-                final_matrix[new_i] = (int*)std::malloc(new_cols * sizeof(int));
-                for (int j = 0; j < new_cols; j++) {
-                    final_matrix[new_i][j] = new_matrix[i][j];
-                }
-                new_i++;
-            }
-        }
-
-        std::cout << "\nИтоговая матрица после удаления строк с нулями:" << std::endl;
-        for (int i = 0; i < final_rows; i++) {
-            for (int j = 0; j < new_cols; j++) {
-                std::cout << final_matrix[i][j] << "\t";
-            }
-            std::cout << std::endl;
-        }
-
-        for (int i = 0; i < final_rows; i++) {
-            std::free(final_matrix[i]);
-        }
-        std::free(final_matrix);
+    if (matrix != nullptr && rows > 0) {
+        print_matrix(matrix, rows, cols);
     }
     else {
-        std::cout << "В матрице нет строк с нулевыми значениями." << std::endl;
+        std::cout << "\nВсе строки были удалены!" << std::endl;
     }
 
-    for (int i = 0; i < rows; i++) {
-        std::free(matrix[i]);
+    if (zero_rows != nullptr) {
+        std::free(zero_rows);
     }
-    std::free(matrix);
 
-    for (int i = 0; i < new_rows; i++) {
-        std::free(new_matrix[i]);
+    if (matrix != nullptr) {
+        for (int i = 0; i < rows; i++) {
+            std::free(matrix[i]);
+        }
+        std::free(matrix);
     }
-    std::free(new_matrix);
-
-    std::free(zero_rows);
-
 
 
     // ВТОРОЙ пункт
