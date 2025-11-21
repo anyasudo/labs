@@ -93,35 +93,20 @@ void remove_rows(int**& matrix, int& rows, int cols, int* rows_to_remove, int re
         return;
     }
 
-    int** temp_matrix = (int**)std::malloc(new_rows * sizeof(int*));
-    int new_index = 0;
+    for (int j = 0; j < remove_count; j++) {
+        int row_to_remove = rows_to_remove[j];
+        std::free(matrix[row_to_remove]);
 
-    for (int i = 0; i < rows; i++) {
-        bool should_remove = false;
-        for (int j = 0; j < remove_count; j++) {
-            if (i == rows_to_remove[j]) {
-                should_remove = true;
-                break;
-            }
-        }
-
-        if (!should_remove) {
-            temp_matrix[new_index] = matrix[i];
-            new_index++;
-        }
-        else {
-            std::free(matrix[i]);
+        // сдвиг всех указателей после удаляемой строки на одну позицию влево
+        for (int k = row_to_remove; k < rows - 1; k++) {
+            matrix[k] = matrix[k + 1];
         }
     }
 
     matrix = (int**)std::realloc(matrix, new_rows * sizeof(int*));
-    for (int i = 0; i < new_rows; i++) {
-        matrix[i] = temp_matrix[i];
-    }
-
-    std::free(temp_matrix);
     rows = new_rows;
 }
+
 
 int main() {
     std::setlocale(LC_ALL, "Ru");
