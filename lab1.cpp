@@ -16,6 +16,54 @@ namespace mt {
             return mileage >= 0;
         }
 
+        // проверка гос номера
+        bool check_license_format_(const std::string& plate) const {
+            if (plate.length() != 6) {
+                return false;
+            }
+
+            std::string allowed_letters = "АВЕКМНОРСТУХ";
+
+            // первый символ должен быть буква из списка
+            bool first_ok = false;
+            for (char letter : allowed_letters) {
+                if (plate[0] == letter) {
+                    first_ok = true;
+                    break;
+                }
+            }
+
+            // 2-4 символы должны быть цифры
+            bool digits_ok = true;
+            for (int i = 1; i <= 3; i++) {
+                if (plate[i] < '0' || plate[i] > '9') {
+                    digits_ok = false;
+                    break;
+                }
+            }
+
+            // 5-6 символы должны быть буквы из списка
+            bool last_ok = false;
+            for (char letter1 : allowed_letters) {
+                for (char letter2 : allowed_letters) {
+                    if (plate[4] == letter1 && plate[5] == letter2) {
+                        last_ok = true;
+                        break;
+                    }
+                }
+                if (last_ok) break;
+            }
+
+            return first_ok && digits_ok && last_ok;
+        }
+
+    protected:
+        void show_protected_info_() const {
+            std::cout << "[Protected доступ] Марка авто: " << brand_ << std::endl;
+        }
+
+        std::string car_color_ = "Не указан";
+
     public:
         // конструктор по умолчанию
         Car() : brand_("Неизвестно"), model_("Неизвестно"),
@@ -34,7 +82,19 @@ namespace mt {
             if (!is_mileage_valid_(mileage)) {
                 throw std::invalid_argument("Пробег должен быть неотрицательным");
             }
+
+            // проверка гос. номера
+            if (!check_license_format_(license_plate)) {
+                throw std::invalid_argument(
+                    "Гос. номер должен быть в формате: БУКВА + 3 ЦИФРЫ + 2 БУКВЫ\n"
+                    "Разрешенные буквы: А, В, Е, К, М, Н, О, Р, С, Т, У, Х\n"
+                    "Пример: А123ВС, М456ОР, Х789ТУ");
+            }
+
             std::cerr << "Вызван конструктор с параметрами" << std::endl;
+
+            // Используем protected метод
+            show_protected_info_();
         }
 
         // конструктор копирования
@@ -63,9 +123,18 @@ namespace mt {
             body_number_ = body_number;
         }
 
-        // сеттер для гос. номера
+        // сеттер для гос. номера с проверкой
         void set_license_plate(const std::string& license_plate) {
+            // проверяем номер
+            if (!check_license_format_(license_plate)) {
+                throw std::invalid_argument(
+                    "Гос. номер должен быть в формате: БУКВА + 3 ЦИФРЫ + 2 БУКВЫ\n"
+                    "Разрешенные буквы: А, В, Е, К, М, Н, О, Р, С, Т, У, Х\n"
+                    "Пример: А123ВС, М456ОР, Х789ТУ");
+            }
+
             license_plate_ = license_plate;
+            std::cout << "Гос. номер успешно изменен на: " << license_plate_ << std::endl;
         }
 
         // метод для вывода всей информации
@@ -74,7 +143,7 @@ namespace mt {
             std::cout << "Марка: " << brand_ << std::endl;
             std::cout << "Модель: " << model_ << std::endl;
             std::cout << "Номер кузова: " << body_number_ << std::endl;
-            std::cout << "Государственный номер: " << license_plate_ << std::endl;
+            std::cout << "Гос. номер: " << license_plate_ << std::endl;
             std::cout << "Пробег: " << mileage_ << " км" << std::endl;
             std::cout << "================================" << std::endl;
         }
@@ -101,6 +170,16 @@ namespace mt {
             mileage_ += distance;
             std::cout << "Автомобиль проехал " << distance << " км" << std::endl;
         }
+
+        // публичные методы для работы с protected данными
+        void set_color(const std::string& color) {
+            car_color_ = color;
+            std::cout << "Цвет автомобиля установлен: " << car_color_ << std::endl;
+        }
+
+        void show_color() const {
+            std::cout << "Цвет автомобиля: " << car_color_ << std::endl;
+        }
     };
 
 }
@@ -112,6 +191,11 @@ int main() {
         mt::Car car1;
         car1.print_info();
 
+        // работа с protected данными через публичные методы
+        car1.show_color();
+        car1.set_color("Красный");
+        car1.show_color();
+
         std::cout << "\n=== Создание car2 с конструктором с параметрами ===" << std::endl;
         mt::Car car2("Toyota", "Camry", "123456789", "А123ВС", 50000);
         car2.print_info();
@@ -122,8 +206,40 @@ int main() {
 
         std::cout << "\n=== Тестирование сеттеров на car1 ===" << std::endl;
         car1.set_body_number("987654321");
-        car1.set_license_plate("В456СД");
+
+        // тестирование сеттера с правильным номером
+        car1.set_license_plate("М456ОР");
         car1.print_info();
+
+        // тестирование с неправильным номером
+        std::cout << "\n=== Тестирование с неправильным номером ===" << std::endl;
+        try {
+            car1.set_license_plate("АБВ123");
+        }
+        catch (const std::exception& e) {
+            std::cout << "Ошибка: " << e.what() << std::endl;
+        }
+
+        try {
+            car1.set_license_plate("123АВС");
+        }
+        catch (const std::exception& e) {
+            std::cout << "Ошибка: " << e.what() << std::endl;
+        }
+
+        try {
+            car1.set_license_plate("А12ВС");
+        }
+        catch (const std::exception& e) {
+            std::cout << "Ошибка: " << e.what() << std::endl;
+        }
+
+        try {
+            car1.set_license_plate("А1234ВС");
+        }
+        catch (const std::exception& e) {
+            std::cout << "Ошибка: " << e.what() << std::endl;
+        }
 
         std::cout << "\n=== Тестирование метода поездки ===" << std::endl;
         car1.drive(100);
@@ -138,7 +254,7 @@ int main() {
         std::cout << "Модель: " << car2.get_model() << std::endl;
         std::cout << "Пробег: " << car2.get_mileage() << " км" << std::endl;
 
-        // тест на ошибки
+        // тест на ошибки с пробегом
         std::cout << "\n=== Тестирование обработки ошибок ===" << std::endl;
         try {
             car1.rollback_mileage(1000); // больше чем пробег
@@ -147,11 +263,19 @@ int main() {
             std::cout << "Ошибка: " << e.what() << std::endl;
         }
 
-        // тесты
-        std::cout << "\n=== Тесты ===" << std::endl;
+        // тесты с созданием авто с ошибками
+        std::cout << "\n=== Тесты создания авто с ошибками ===" << std::endl;
         try {
             std::cout << "\nПопытка создать машину с отрицательным пробегом:" << std::endl;
             mt::Car error_car("BMW", "X5", "555555", "Х555ХХ", -100);
+        }
+        catch (const std::exception& e) {
+            std::cout << "Ошибка при создании: " << e.what() << std::endl;
+        }
+
+        try {
+            std::cout << "\nПопытка создать машину с неправильным номером:" << std::endl;
+            mt::Car error_car2("BMW", "X5", "555555", "ПРИВЕТ", 10000);
         }
         catch (const std::exception& e) {
             std::cout << "Ошибка при создании: " << e.what() << std::endl;
@@ -165,13 +289,9 @@ int main() {
             std::cout << "Ошибка: " << e.what() << std::endl;
         }
 
-        std::cout << "\n=== Создание автомобиля в локальном блоке ===" << std::endl;
-        {
-            mt::Car local_car("Lada", "Vesta", "111222333", "У777УУ", 15000);
-            local_car.drive(200);
-            local_car.print_info();
-        } // вызывается деструктор для local_car
-        std::cout << "Выйти из локального блока" << std::endl;
+        std::cout << "\n=== Примеры правильных номеров ===" << std::endl;
+        std::cout << "Правильные номера: А123ВС, Е456КМ, О789РТ, Х123СТ" << std::endl;
+        std::cout << "Неправильные: Я123ВС (Я не разрешена), АБВ123 (буквы не там), 123АВС (начинается с цифры)" << std::endl;
 
     }
     catch (const std::exception& e) {
